@@ -1,0 +1,39 @@
+function FindProxyForURL(url, host) {
+
+// If URL matches, send direct.
+	if (shExpMatch(url, "unknown.com/*") ||
+		shExpMatch(url, "*.nonstandardport.com:945/*") ||
+		shExpMatch(url, "ftp://*.*/*"))
+		return "DIRECT";
+
+// If hostname matches, send direct.
+	if (dnsDomainIs(host, "*.domain.com"))
+		return "DIRECT";
+		
+
+// Redirect these hosts through the alternate proxy
+        if (dnsDomainIs(host, "myhost.local"))
+                return "PROXY <%= @alternate_proxy %>";
+
+        if (dnsDomainIs(host, "wherever.com"))
+                return "PROXY <%= @alternate_proxy %>";
+
+
+// If URL has no dots in domain name, e.g. http://intranet/, send direct.
+	if (isPlainHostName(host))
+		return "DIRECT";
+
+//if hostname is an plain IP
+        if (isInNet(host, "192.168.1.10", "255.255.255.255"))
+                return "PROXY <%= @alternate_proxy %>";
+
+
+// If IP address is internal or hostname resolves to internal IP, send direct.
+	var resolved_ip = dnsResolve(host);
+	if (isInNet(resolved_ip, "10.0.0.0", "255.0.0.0")) 
+		return "DIRECT";
+
+//Default Rule for everything routing through Primary Proxy
+	return "PROXY <%= @proxy %>; Direct";
+
+}
