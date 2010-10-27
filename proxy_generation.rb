@@ -7,17 +7,26 @@ require 'tempfile'
 configs = [
 	{:file_name => "EastCoast", :proxy => "123.123.123.123:8080"},
 	{:file_name => "WestCoast", :proxy => "321.321.321.321:8080"}
+]
 
 @alternate_proxy = "123.123.123.543:8080" # this is the alternate proxy
 
 template = ERB.new File.read("proxy.erb") #this is the PAC file template
 date = Time.now.to_i #timestamp
-release_path = "/var/www/proxy/releases/#{date}" #path we want to store our releases to, so that we can roll back to a safe version if we screw up
+release_path = File.expand_path(".") + "/releases" #path we want to store our releases to, so that we can roll back to a safe version if we screw up
 
 puts "Test only? (Y/N)"
 test = gets.chomp.downcase #ask the user if this should be test only?
 
-current_path = "/var/www/proxy/current" #set the path where the web server serving the PAC files is pointed to
+current_path = File.expand_path(".") + "/current" #set the path where the web server serving the PAC files is pointed to
+
+puts current_path
+
+if !Dir.exist?(release_path)
+   Dir.mkdir(release_path)
+end
+
+release_path = release_path + "/#{date}"
 
 if !Dir.exist?(release_path)
    Dir.mkdir(release_path)
@@ -33,7 +42,7 @@ configs.each do |config|
 	system("cat #{temp.path} | ruby jsmin.rb > #{release_path}/proxy_#{file_name}.pac") #minify with jsmin.rb
 end
 
-if test == "n"
+if test == "n" || !File.exist?(current_path)
 	File.unlink(current_path) if File.exist?(current_path) && File.symlink?(current_path) #unlink the previous release_path
 	File.symlink(release_path, current_path) #link the newest release_path with the current
 end
